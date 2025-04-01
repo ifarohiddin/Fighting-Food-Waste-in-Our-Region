@@ -1,0 +1,106 @@
+﻿# SurplusSaver Project Documentation
+
+## Project Overview
+
+**Project Name:** SurplusSaver  
+**Tagline:** Fighting Food Waste in Our Region  
+**Objective:** SurplusSaver aims to reduce food waste by connecting local shops with customers through a platform where unsold food can be sold at a discount via "Surprise Bags." The goal is to build a Minimum Viable Product (MVP) that allows shops to list surplus items, customers to buy them at a discount, and manage pickups with real-time notifications.
+
+## Problem Statement
+
+Food waste is a global issue with significant local impact. According to the UNEP Food Waste Index Report 2024, the total annual household food waste in selected countries is staggering:
+
+- **China:** 108,667,369 tonnes (76 kg per capita)  
+- **India:** 78,192,338 tonnes (55 kg per capita)  
+- **United States:** 24,716,539 tonnes (73 kg per capita)  
+- **Brazil:** 20,289,630 tonnes (94 kg per capita)  
+- **Germany:** 6,502,860 tonnes (78 kg per capita)  
+- **United Kingdom:** 5,907,005 tonnes (76 kg per capita)  
+- **Russia:** 4,828,772 tonnes (33 kg per capita)  
+- **France:** 3,942,430 tonnes (61 kg per capita)  
+
+Locally, shops in our region discard tons of unsold food—perfectly edible but past its prime sales window. This results in:  
+- **Economic Loss:** Businesses lose money as unsold food piles up.  
+- **Environmental Impact:** Hypothetically, 30% of food produced locally goes unsold, contributing to 1.5 tons of CO2 emissions per ton of wasted food.  
+
+This isn’t just an environmental problem; it’s a lost opportunity for businesses and budget-conscious customers.
+
+## Solution: SurplusSaver
+
+SurplusSaver connects local shops with customers by offering unsold food at a discount through "Surprise Bags." For example, customers can buy $15 worth of goods for just $5.
+
+### Key Features:
+- **Businesses:** List surplus items for sale.  
+- **Customers:** Buy and pick up discounted Surprise Bags.  
+- **Real-Time Updates:** Availability notifications for customers.  
+
+### Workflow:
+1. **Shop:** Lists surplus food as a Surprise Bag.  
+2. **Customer:** Browses and buys a Surprise Bag.  
+3. **Pickup:** Customer picks up the bag from the shop.  
+
+## Scope of the Project
+
+### Build a Functional MVP with:
+- User registration (shops and customers).  
+- Listing and browsing Surprise Bags.  
+- Purchase and pickup system.  
+- Real-time updates and notifications.  
+
+### Out of Scope (for now):
+- Delivery services.  
+- Advanced analytics.  
+- Multi-region support.  
+
+### Goal:
+The MVP should be a working app with core features: users sign up, shops list bags, customers buy them, and pickups happen seamlessly.
+
+## Feasibility Analysis
+
+### Market Need:
+- No similar app exists in our region.  
+- Local shops and eco-conscious customers are untapped markets.  
+
+### Tech Stack:
+- **Backend:** FastAPI, Redis, and Celery are lightweight, modern, and within the skillset.  
+- **Frontend:** Flexible choice (e.g., React, Vue, or HTML).  
+- **Database:** SQLite (simple) or PostgreSQL (scalable).  
+
+### Time:
+- 1-2 weeks is sufficient for an MVP with Redis and Celery knowledge.  
+
+### Cost:
+- Minimal—open-source tools, basic hosting (e.g., Heroku free tier).  
+
+## Technical Overview
+
+### Architecture:
+- **Backend:** FastAPI (API and logic).  
+- **Cache/Message Broker:** Redis (speed and updates).  
+- **Task Queue:** Celery (notifications and scheduling).  
+- **Frontend:** Flexible choice (e.g., React, Vue, or HTML).  
+- **Database:** SQLite (simple) or PostgreSQL (scalable).  
+
+### How It Works:
+- FastAPI handles the core API and business logic.  
+- Redis ensures fast caching and real-time updates for bag availability.  
+- Celery manages background tasks like notifications and pickup reminders.  
+- The frontend ties it all together for user interaction.  
+
+## Roadmap
+
+### Week 1 (4 Lessons):
+- **Lesson 1:** Set up FastAPI, Redis, Celery, and basic DB (SQLite).  
+- **Lesson 2:** Core backend—shop registration and bag listing endpoints.  
+- **Lesson 3:** Purchase flow—buy endpoint + Redis for bag availability.  
+- **Lesson 4:** Celery task for pickup reminder + basic frontend (list bags).  
+
+### Week 2 (4 Lessons, Optional):
+- **Lesson 5:** Add user registration (customers) + frontend buy button.  
+- **Lesson 6:** Redis caching for nearby bags + basic testing.  
+- **Lesson 7:** Fix bugs, add pickup confirmation (QR code or ID).  
+- **Lesson 8:** Demo prep—simple UI tweaks and practice run.  
+
+## Conclusion
+
+SurplusSaver addresses a critical issue of food waste by providing a practical solution for local shops and customers. The MVP focuses on core functionality, leveraging modern tools like FastAPI, Redis, and Celery to ensure a fast, scalable, and user-friendly experience. With a clear roadmap and minimal costs, this project is feasible and impactful.
