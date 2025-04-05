@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Dashboard - SurplusSaver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Shop Dashboard</h1>
+        <button id="logout">Logout</button>
+        <h2>Add Surprise Bag</h2>
+        <form id="bag-form">
+            <input type="text" id="description" placeholder="Description" required>
+            <input type="number" id="original_price" placeholder="Original Price" step="0.01" required>
+            <input type="number" id="discounted_price" placeholder="Discounted Price" step="0.01" required>
+            <input type="number" id="quantity" placeholder="Quantity" required>
+            <input type="datetime-local" id="pickup_time" required>
+            <button type="submit">Add Bag</button>
+        </form>
+        <h2>Your Bags</h2>
+        <div id="shop-bags"></div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

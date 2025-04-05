@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SurplusSaver - Fight Food Waste</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.0/babel.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-blue-100 min-h-screen font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const API_BASE_URL = "http://127.0.0.1:8000";
+
+    const App = () => {
+      const [token, setToken] = useState(localStorage.getItem("token") || "");
+      const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")) || null);
+      const [view, setView] = useState("login"); // login, register, dashboard, etc.
+      const [bags, setBags] = useState([]);
+      const [orders, setOrders] = useState([]);
+      const [reviews, setReviews] = useState([]);
+      const [users, setUsers] = useState([]);
+      const [statistics, setStatistics] = useState(null);
+
+      useEffect(() => {
+        if (token && user) {
+          if (user.role === "customer") fetchBags();
+          if (user.role === "shop") fetchShopBags();
+          if (user.role === "customer") fetchOrders();
+          if (user.role === "admin") fetchUsers();
+          if (user.role === "admin") fetchStatistics();
+        }
+      }, [token, user]);
+
+      const fetchBags = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/bags?lat=${user.lat}&lon=${user.lon}&radius=10`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setBags(res.data);
+        } catch (err) {
+          console.error("Error fetching bags:", err);
+        }
+      };
+
+      const fetchShopBags = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/shops/${user.id}/bags`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setBags(res.data);
+        } catch (err) {
+          console.error("Error fetching shop bags:", err);
+        }
+      };
+
+      const fetchOrders = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/customers/${user.id}/orders`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setOrders(res.data);
+        } catch (err) {
+          console.error("Error fetching orders:", err);
+        }
+      };
+
+      const fetchReviews = async (shopId) => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/shops/${shopId}/reviews`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setReviews(res.data);
+        } catch (err) {
+          console.error("Error fetching reviews:", err);
+        }
+      };
+
+      const fetchUsers = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/admin/users`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUsers(res.data);
+        } catch (err) {
+          console.error("Error fetching users:", err);
+        }
+      };
+
+      const fetchStatistics = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/admin/statistics`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setStatistics(res.data);
+        } catch (err) {
+          console.error("Error fetching statistics:", err);
+        }
+      };
+
+      const handleLogout = () => {
+        setToken("");
+        setUser(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setView("login");
+      };
+
+      return (
+        <div className="container mx-auto p-4">
+          {token && user ? (
+            <div>
+              <nav className="flex justify-between items-center bg-white shadow-lg p-4 rounded-lg mb-6">
+                <h1 className="text-2xl font-bold text-green-600">SurplusSaver</h1>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setView(user.role === "customer" ? "dashboard" : user.role === "shop" ? "shop" : "admin")}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </nav>
+
+              {view === "dashboard" && user.role === "customer" && (
+                <CustomerDashboard
+                  bags={bags}
+                  orders={orders}
+                  fetchBags={fetchBags}
+                  fetchOrders={fetchOrders}
+                  fetchReviews={fetchReviews}
+                  token={token}
+                  user={user}
+                  setView={setView}
+                />
+              )}
+
+              {view === "shop" && user.role === "shop" && (
+                <ShopDashboard
+                  bags={bags}
+                  fetchBags={fetchShopBags}
+                  token={token}
+                  user={user}
+                  setView={setView}
+                />
+              )}
+
+              {view === "admin" && user.role === "admin" && (
+                <AdminDashboard
+                  users={users}
+                  statistics={statistics}
+                  fetchUsers={fetchUsers}
+                  token={token}
+                  user={user}
+                  setView={setView}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="flex justify-center items-center min-h-[80vh]">
+              {view === "login" ? (
+                <Login setToken={setToken} setUser={setUser} setView={setView} />
+              ) : (
+                <Register setView={setView} />
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const Login = ({ setToken, setUser, setView }) => {
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [error, setError] = useState("");
+
+      const handleLogin = async () => {
+        try {
+          const res = await axios.post(
+            `${API_BASE_URL}/users/login`,
+            new URLSearchParams({ username: email, password }),
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+          );
+          setToken(res.data.access_token);
+          localStorage.setItem("token", res.data.access_token);
+          const userRes = await axios.get(`${API_BASE_URL}/users/me`, {
+            headers: { Authorization: `Bearer ${res.data.access_token}` },
+          });
+          setUser(userRes.data);
+          localStorage.setItem("user", JSON.stringify(userRes.data));
+        } catch (err) {
+          setError("Invalid credentials");
+        }
+      };
+
+      return (
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          <h2 className="text-3xl font-bold text-green-600 mb-6 text-center">Login</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <button
+            onClick={handleLogin}
+            className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+          >
+            Login
+          </button>
+          <p className="mt-4 text-center">
+            Don't have an account?{" "}
+            <span
+              onClick={() => setView("register")}
+              className="text-green-500 cursor-pointer hover:underline"
+            >
+              Register
+            </span>
+          </p>
+        </div>
+      );
+    };
+
+    const Register = ({ setView }) => {
+      const [form, setForm] = useState({
+        name: "",
+        email: "",
+        password: "",
+        role: "customer",
+        lat: 41.2995,
+        lon: 69.2401,
+      });
+      const [error, setError] = useState("");
+
+      const handleRegister = async () => {
+        try {
+          await axios.post(`${API_BASE_URL}/users/register`, form);
+          setView("login");
+        } catch (err) {
+          setError("Email already registered");
+        }
+      };
+
+      return (
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+          <h2 className="text-3xl font-bold text-green-600 mb-6 text-center">Register</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <input
+            type="text"
+            placeholder="Name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+          <select
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="customer">Customer</option>
+            <option value="shop">Shop</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button
+            onClick={handleRegister}
+            className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+          >
+            Register
+          </button>
+          <p className="mt-4 text-center">
+            Already have an account?{" "}
+            <span
+              onClick={() => setView("login")}
+              className="text-green-500 cursor-pointer hover:underline"
+            >
+              Login
+            </span>
+          </p>
+        </div>
+      );
+    };
+
+    const CustomerDashboard = ({ bags, orders, fetchBags, fetchOrders, fetchReviews, token, user, setView }) => {
+      const [bagId, setBagId] = useState("");
+      const [shopId, setShopId] = useState("");
+      const [rating, setRating] = useState(5);
+      const [comment, setComment] = useState("");
+
+      const handleBuy = async (bagId) => {
+        try {
+          await axios.post(
+            `${API_BASE_URL}/customers/${user.id}/buy/${bagId}`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          fetchBags();
+          fetchOrders();
+        } catch (err) {
+          console.error("Error buying bag:", err);
+        }
+      };
+
+      const handleCancelOrder = async (orderId) => {
+        try {
+          await axios.post(
+            `${API_BASE_URL}/customers/${user.id}/orders/${orderId}/cancel`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          fetchOrders();
+        } catch (err) {
+          console.error("Error cancelling order:", err);
+        }
+      };
+
+      const handleSubmitReview = async () => {
+        try {
+          await axios.post(
+            `${API_BASE_URL}/customers/${user.id}/reviews/${shopId}`,
+            { rating, comment },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setShopId("");
+          setRating(5);
+          setComment("");
+        } catch (err) {
+          console.error("Error submitting review:", err);
+        }
+      };
+
+      return (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Customer Dashboard</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold text-gray-700 mb-4">Available Bags</h3>
+              {bags.map((bag) => (
+                <div key={bag.id} className="border-b py-4">
+                  <p className="text-lg font-medium">{bag.description}</p>
+                  <p>Price: ${bag.price}</p>
+                  <p>Quantity: {bag.quantity}</p>
+                  <p>Distance: {bag.distance ? bag.distance.toFixed(2) : "N/A"} km</p>
+                  <button
+                    onClick={() => handleBuy(bag.id)}
+                    className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShopId(bag.shop_id);
+                      fetchReviews(bag.shop_id);
+                    }}
+                    className="ml-2 mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                  >
+                    View Shop Reviews
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Orders</h3>
+              {orders.map((order) => (
+                <div key={order.id} className="border-b py-4">
+                  <p>Order ID: {order.id}</p>
+                  <p>Bag ID: {order.bag_id}</p>
+                  <p>Status: {order.status}</p>
+                  {order.status === "pending" && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {shopId && (
+              <div className="bg-white p-6 rounded-lg shadow-lg col-span-2">
+                <h3 className="text-xl font-semibold text-gray-700 mb-4">Submit Review for Shop</h3>
+                <div className="mb-4">
+                  <h4 className="text-lg font-medium">Shop Reviews</h4>
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b py-2">
+                      <p>Rating: {review.rating}/5</p>
+                      <p>{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={rating}
+                  onChange={(e) => setRating(Number(e.target.value))}
+                  className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Rating (1-5)"
+                />
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Comment"
+                />
+                <button
+                  onClick={handleSubmitReview}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                >
+                  Submit Review
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const ShopDashboard = ({ bags, fetchBags, token, user, setView }) => {
+      const [form, setForm] = useState({
+        description: "",
+        price: 0,
+        quantity: 0,
+        pickup_start: "",
+        pickup_end: "",
+        category: "",
+      });
+      const [editBag, setEditBag] = useState(null);
+
+      const handleCreateBag = async () => {
+        try {
+          await axios.post(`${API_BASE_URL}/shops/${user.id}/bags`, form, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchBags();
+          setForm({ description: "", price: 0, quantity: 0, pickup_start: "", pickup_end: "", category: "" });
+        } catch (err) {
+          console.error("Error creating bag:", err);
+        }
+      };
+
+      const handleUpdateBag = async (bagId) => {
+        try {
+          await axios.patch(`${API_BASE_URL}/shops/${user.id}/bags/${bagId}`, form, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchBags();
+          setEditBag(null);
+          setForm({ description: "", price: 0, quantity: 0, pickup_start: "", pickup_end: "", category: "" });
+        } catch (err) {
+          console.error("Error updating bag:", err);
+        }
+      };
+
+      const handleDeleteBag = async (bagId) => {
+        try {
+          await axios.delete(`${API_BASE_URL}/shops/${user.id}/bags/${bagId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchBags();
+        } catch (err) {
+          console.error("Error deleting bag:", err);
+        }
+      };
+
+      return (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Shop Dashboard</h2>
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">
+              {editBag ? "Update Bag" : "Create New Bag"}
+            </h3>
+            <input
+              type="text"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="datetime-local"
+              value={form.pickup_start}
+              onChange={(e) => setForm({ ...form, pickup_start: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="datetime-local"
+              value={form.pickup_end}
+              onChange={(e) => setForm({ ...form, pickup_end: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="text"
+              placeholder="Category"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={() => (editBag ? handleUpdateBag(editBag.id) : handleCreateBag())}
+              className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+            >
+              {editBag ? "Update Bag" : "Create Bag"}
+            </button>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Your Bags</h3>
+            {bags.map((bag) => (
+              <div key={bag.id} className="border-b py-4">
+                <p className="text-lg font-medium">{bag.description}</p>
+                <p>Price: ${bag.price}</p>
+                <p>Quantity: {bag.quantity}</p>
+                <p>Status: {bag.status}</p>
+                <button
+                  onClick={() => {
+                    setEditBag(bag);
+                    setForm({
+                      description: bag.description,
+                      price: bag.price,
+                      quantity: bag.quantity,
+                      pickup_start: bag.pickup_start,
+                      pickup_end: bag.pickup_end,
+                      category: bag.category,
+                    });
+                  }}
+                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteBag(bag.id)}
+                  className="mt-2 ml-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const AdminDashboard = ({ users, statistics, fetchUsers, token, user, setView }) => {
+      const [form, setForm] = useState({
+        name: "",
+        email: "",
+        password: "",
+        role: "admin",
+        lat: 41.2995,
+        lon: 69.2401,
+      });
+
+      const handleCreateAdmin = async () => {
+        try {
+          await axios.post(`${API_BASE_URL}/superadmin/admins`, form, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchUsers();
+        } catch (err) {
+          console.error("Error creating admin:", err);
+        }
+      };
+
+      const handleDeleteUser = async (userId) => {
+        try {
+          await axios.delete(`${API_BASE_URL}/admin/users/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchUsers();
+        } catch (err) {
+          console.error("Error deleting user:", err);
+        }
+      };
+
+      const handleApproveShop = async (shopId) => {
+        try {
+          await axios.patch(`${API_BASE_URL}/superadmin/shops/${shopId}/approve`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          fetchUsers();
+        } catch (err) {
+          console.error("Error approving shop:", err);
+        }
+      };
+
+      return (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Admin Dashboard</h2>
+          {statistics && (
+            <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+              <h3 className="text-xl font-semibold text-gray-700 mb-4">Statistics</h3>
+              <p>Bags Sold: {statistics.bags_sold}</p>
+              <p>CO2 Saved: {statistics.co2_saved_kg} kg</p>
+            </div>
+          )}
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Create New Admin</h3>
+            <input
+              type="text"
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={handleCreateAdmin}
+              className="w-full p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+            >
+              Create Admin
+            </button>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Users</h3>
+            {users.map((u) => (
+              <div key={u.id} className="border-b py-4">
+                <p className="text-lg font-medium">{u.name}</p>
+                <p>Email: {u.email}</p>
+                <p>Role: {u.role}</p>
+                {u.role === "shop" && (
+                  <button
+                    onClick={() => handleApproveShop(u.id)}
+                    className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                  >
+                    Approve Shop
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeleteUser(u.id)}
+                  className="mt-2 ml-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
